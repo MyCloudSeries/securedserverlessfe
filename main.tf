@@ -1,33 +1,33 @@
 resource "aws_s3_bucket" "logs" {
-  bucket = format("logs-%s", var.appurl)
-  acl    = "log-delivery-write"
+  bucket                = format("logs-%s", var.appurl)
+  acl                   = "log-delivery-write"
 }
 
 resource "aws_s3_bucket" "feapp" {
-  bucket = var.appurl
-  acl    = "public-read"
-  policy = file("security/bucketpolicy.json")
+  bucket                = var.appurl
+  acl                   = "public-read"
+  policy                = file("security/bucketpolicy.json")
 
   website {
-    index_document = "index.html"
-    error_document = "error.html"
+    index_document      = "index.html"
+    error_document      = "error.html"
   }
 
   tags = {
-    Name              = "staticServerless"
-    SiteURL           = var.appurl
+    Name                = "staticServerless"
+    SiteURL             = var.appurl
   }
 
   cors_rule {
-    allowed_headers   = ["*"]
-    allowed_methods   = ["PUT","POST","GET", "HEAD"]
-    allowed_origins   = [var.appurl]
-    expose_headers    = ["ETag"]
-    max_age_seconds   = 3000
+    allowed_headers     = ["*"]
+    allowed_methods     = ["PUT","POST","GET", "HEAD"]
+    allowed_origins     = [var.appurl]
+    expose_headers      = ["ETag"]
+    max_age_seconds     = 3000
   }
 
   versioning {
-    enabled = true
+    enabled             = true
   }
 
   logging {
@@ -45,9 +45,7 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
     domain_name       = aws_s3_bucket.feapp.bucket_regional_domain_name
     origin_id         = local.s3_origin_id
   
-    s3_origin_config {
-        origin_access_identity = "origin-access-identity/cloudfront/ABCDEFG1234567"
-    }
+    
   }
 
   enabled             = true
@@ -57,11 +55,12 @@ resource "aws_cloudfront_distribution" "s3_distribution" {
 
   logging_config {
     include_cookies   = false
-    bucket            = aws_s3_bucket.logs.id
+    bucket            =  format("%s.s3.amazonaws.com", var.appurl)
     prefix            = "cflogs/"
   }
 
-  aliases = ["var.appurl","var.wwwappurl"]
+  # Ensure a valid certificate for this URL is available before using it
+  #aliases = ["var.appurl","var.wwwappurl"]
 
   default_cache_behavior {
     allowed_methods        = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
